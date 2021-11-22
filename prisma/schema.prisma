@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -8,4 +5,76 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+model answers {
+  id          BigInt  @id(map: "answers_pk") @default(autoincrement())
+  content     String
+  creator     BigInt
+  create_date BigInt
+  modify_date BigInt?
+  question_id BigInt
+  vote        Int
+  confirmed   Boolean @default(false)
+}
+
+model categories {
+  id                    Int                     @id(map: "categories_pk") @default(autoincrement()) @db.SmallInt
+  title                 String                  @db.VarChar(200)
+  parent_id             Int?                    @db.SmallInt
+  is_active             Boolean                 @default(true)
+  categories            categories?             @relation("categoriesTocategories_parent_id", fields: [parent_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "categories_fk")
+  other_categories      categories[]            @relation("categoriesTocategories_parent_id")
+  question_category_map question_category_map[]
+}
+
+model question_category_map {
+  id          BigInt     @id(map: "question_category_map_pk") @default(autoincrement())
+  question_id BigInt
+  category_id Int        @db.SmallInt
+  categories  categories @relation(fields: [category_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "question_category_map_category_fk_1")
+  questions   questions  @relation(fields: [question_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "question_category_map_question_fk")
+}
+
+model question_tag_map {
+  id          BigInt @id(map: "question_tag_map_pk") @default(autoincrement())
+  question_id BigInt
+  tag_id      BigInt
+}
+
+model questions {
+  id                    BigInt                  @id(map: "questions_pk") @default(autoincrement())
+  title                 String                  @db.VarChar(500)
+  content               String
+  create_date           BigInt
+  creator               BigInt
+  modify_date           BigInt?
+  users                 users                   @relation(fields: [creator], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "questions_creator_fk")
+  question_category_map question_category_map[]
+}
+
+model tags {
+  id    BigInt @id(map: "tags_pk") @default(autoincrement())
+  title String @db.VarChar(50)
+}
+
+model user_additional {
+  id             BigInt @id(map: "user_additional_pk") @default(autoincrement())
+  user_id        BigInt
+  question_count Int    @default(0)
+  answer_count   Int    @default(0)
+  rate           Float  @default(0) @db.Real
+  vote_count     Int    @default(0)
+  avatar         Int    @default(1) @db.SmallInt
+  users          users  @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "user_additional_users_fk")
+}
+
+model users {
+  id              BigInt            @id(map: "users_pk") @default(autoincrement())
+  full_name       String?           @db.VarChar(30)
+  email           String            @unique(map: "users_email_un") @db.VarChar(30)
+  password        String            @db.VarChar(300)
+  is_active       Boolean           @default(false)
+  questions       questions[]
+  user_additional user_additional[]
 }
